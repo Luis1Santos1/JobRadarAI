@@ -10,6 +10,7 @@ using Microsoft.OpenApi;
 using Serilog;
 using Serilog.Formatting.Compact;
 using System.Text;
+using System.Text.Json.Serialization;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -23,7 +24,11 @@ builder.Host.UseSerilog((context, services, loggerConfiguration) =>
         .WriteTo.Console(new RenderedCompactJsonFormatter());
 });
 
-builder.Services.AddControllers();
+builder.Services.AddControllers()
+    .AddJsonOptions(options =>
+    {
+        options.JsonSerializerOptions.Converters.Add(new JsonStringEnumConverter());
+    });
 
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen(options =>

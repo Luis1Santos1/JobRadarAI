@@ -1,5 +1,6 @@
 ﻿using JobRadar.Domain.Domain.Users;
 using JobRadar.Domain.Profiles;
+using JobRadar.Domain.Recruiters;
 using JobRadar.Domain.Users;
 using Microsoft.EntityFrameworkCore;
 
@@ -25,6 +26,12 @@ public sealed class JobRadarDbContext : DbContext
     public DbSet<Technology> Technologies => Set<Technology>();
 
     public DbSet<DeveloperProfileTechnology> DeveloperProfileTechnologies => Set<DeveloperProfileTechnology>();
+
+    public DbSet<Recruiter> Recruiters => Set<Recruiter>();
+
+    public DbSet<RecruiterTag> RecruiterTags => Set<RecruiterTag>();
+
+    public DbSet<KnownConnection> KnownConnections => Set<KnownConnection>();
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {

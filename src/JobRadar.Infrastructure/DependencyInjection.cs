@@ -1,4 +1,5 @@
 ﻿using JobRadar.Infrastructure.Auth;
+using JobRadar.Infrastructure.Normalization;
 using JobRadar.Infrastructure.Persistence;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
@@ -23,6 +24,7 @@ public static class DependencyInjection
 
         services.AddScoped<PasswordHasher>();
         services.AddScoped<JwtTokenService>();
+        services.AddScoped<ContactNormalizationService>();
 
         services.AddDbContext<JobRadarDbContext>(options =>
         {
