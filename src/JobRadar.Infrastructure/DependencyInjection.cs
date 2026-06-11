@@ -1,4 +1,5 @@
-﻿using JobRadar.Infrastructure.Persistence;
+﻿using JobRadar.Infrastructure.Auth;
+using JobRadar.Infrastructure.Persistence;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
@@ -17,6 +18,11 @@ public static class DependencyInjection
         {
             throw new InvalidOperationException("Connection string 'DefaultConnection' not found.");
         }
+
+        services.Configure<JwtSettings>(configuration.GetSection("Jwt"));
+
+        services.AddScoped<PasswordHasher>();
+        services.AddScoped<JwtTokenService>();
 
         services.AddDbContext<JobRadarDbContext>(options =>
         {

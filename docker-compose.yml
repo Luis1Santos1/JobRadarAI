@@ -23,6 +23,11 @@ services:
       ASPNETCORE_URLS: "http://+:8080"
       ConnectionStrings__DefaultConnection: "Server=sqlserver,1433;Database=JobRadarAiDb;User Id=sa;Password=JobRadar_AI@2026;TrustServerCertificate=True;Encrypt=False"
       Database__ApplyMigrations: "true"
+      Jwt__Issuer: "JobRadarAI"
+      Jwt__Audience: "JobRadarAI"
+      Jwt__SecretKey: "DEV_ONLY_SECRET_CHANGE_ME_JOBRADAR_AI_2026_WITH_A_LONG_SAFE_KEY"
+      Jwt__AccessTokenExpirationMinutes: "30"
+      Jwt__RefreshTokenExpirationDays: "7"
     ports:
       - "8080:8080"
     depends_on:

@@ -1,4 +1,6 @@
-﻿using JobRadar.Domain.Users;
+﻿using JobRadar.Domain.Domain.Users;
+using JobRadar.Domain.Profiles;
+using JobRadar.Domain.Users;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Metadata.Builders;
 
@@ -20,6 +22,10 @@ public sealed class AppUserConfiguration : IEntityTypeConfiguration<AppUser>
             .HasMaxLength(256)
             .IsRequired();
 
+        builder.Property(user => user.PasswordHash)
+            .HasMaxLength(512)
+            .IsRequired();
+
         builder.HasIndex(user => user.Email)
             .IsUnique();
 
@@ -30,5 +36,26 @@ public sealed class AppUserConfiguration : IEntityTypeConfiguration<AppUser>
             .IsRequired();
 
         builder.Property(user => user.UpdatedAt);
+
+        builder.HasMany(user => user.UserRoles)
+            .WithOne(userRole => userRole.User)
+            .HasForeignKey(userRole => userRole.UserId)
+            .OnDelete(DeleteBehavior.Cascade);
+
+        builder.HasMany(user => user.RefreshTokens)
+            .WithOne(refreshToken => refreshToken.User)
+            .HasForeignKey(refreshToken => refreshToken.UserId)
+            .OnDelete(DeleteBehavior.Cascade);
+
+        builder.HasOne(user => user.DeveloperProfile)
+            .WithOne(profile => profile.User)
+            .HasForeignKey<DeveloperProfile>(profile => profile.UserId)
+            .OnDelete(DeleteBehavior.Cascade);
+
+        builder.Navigation(user => user.UserRoles)
+            .UsePropertyAccessMode(PropertyAccessMode.Field);
+
+        builder.Navigation(user => user.RefreshTokens)
+            .UsePropertyAccessMode(PropertyAccessMode.Field);
     }
 }
