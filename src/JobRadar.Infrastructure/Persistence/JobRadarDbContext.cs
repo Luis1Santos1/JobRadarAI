@@ -1,4 +1,5 @@
 ﻿using JobRadar.Domain.Domain.Users;
+using JobRadar.Domain.JobPosts;
 using JobRadar.Domain.Profiles;
 using JobRadar.Domain.Recruiters;
 using JobRadar.Domain.Users;
@@ -32,6 +33,8 @@ public sealed class JobRadarDbContext : DbContext
     public DbSet<RecruiterTag> RecruiterTags => Set<RecruiterTag>();
 
     public DbSet<KnownConnection> KnownConnections => Set<KnownConnection>();
+
+    public DbSet<JobPost> JobPosts => Set<JobPost>();
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {

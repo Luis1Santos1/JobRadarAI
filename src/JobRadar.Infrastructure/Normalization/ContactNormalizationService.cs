@@ -91,4 +91,42 @@ public sealed class ContactNormalizationService
 
         return $"{host}/{path}";
     }
+
+    public string? NormalizeUrl(string? value)
+    {
+        if (string.IsNullOrWhiteSpace(value))
+        {
+            return null;
+        }
+
+        var raw = value.Trim();
+
+        if (!raw.StartsWith("http://", StringComparison.OrdinalIgnoreCase) &&
+            !raw.StartsWith("https://", StringComparison.OrdinalIgnoreCase))
+        {
+            raw = $"https://{raw}";
+        }
+
+        if (!Uri.TryCreate(raw, UriKind.Absolute, out var uri))
+        {
+            return value.Trim()
+                .TrimEnd('/')
+                .ToLowerInvariant();
+        }
+
+        var host = uri.Host
+            .Replace("www.", string.Empty, StringComparison.OrdinalIgnoreCase)
+            .ToLowerInvariant();
+
+        var path = Uri.UnescapeDataString(uri.AbsolutePath)
+            .Trim('/')
+            .ToLowerInvariant();
+
+        if (string.IsNullOrWhiteSpace(path))
+        {
+            return host;
+        }
+
+        return $"{host}/{path}";
+    }
 }
