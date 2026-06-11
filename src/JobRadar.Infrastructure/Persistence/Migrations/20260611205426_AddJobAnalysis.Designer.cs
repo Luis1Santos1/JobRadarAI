@@ -4,6 +4,7 @@ using JobRadar.Infrastructure.Persistence;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
 using Microsoft.EntityFrameworkCore.Metadata;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 
 #nullable disable
@@ -11,9 +12,11 @@ using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 namespace JobRadar.Infrastructure.Persistence.Migrations
 {
     [DbContext(typeof(JobRadarDbContext))]
-    partial class JobRadarDbContextModelSnapshot : ModelSnapshot
+    [Migration("20260611205426_AddJobAnalysis")]
+    partial class AddJobAnalysis
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder

@@ -28,6 +28,10 @@ services:
       Jwt__SecretKey: "DEV_ONLY_SECRET_CHANGE_ME_JOBRADAR_AI_2026_WITH_A_LONG_SAFE_KEY"
       Jwt__AccessTokenExpirationMinutes: "30"
       Jwt__RefreshTokenExpirationDays: "7"
+      LocalAi__Enabled: "true"
+      LocalAi__BaseUrl: "http://host.docker.internal:11434"
+      LocalAi__Model: "llama3.1:8b"
+      LocalAi__TimeoutSeconds: "180"
     ports:
       - "8080:8080"
     depends_on:

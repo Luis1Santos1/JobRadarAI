@@ -1,10 +1,12 @@
 ﻿using JobRadar.Api.Extensions;
 using JobRadar.Domain.JobPosts;
+using JobRadar.Infrastructure.AI;
 using JobRadar.Infrastructure.Normalization;
 using JobRadar.Infrastructure.Persistence;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
+using System.Text.Json;
 
 namespace JobRadar.Api.Controllers;
 
@@ -15,13 +17,16 @@ public sealed class JobPostsController : ControllerBase
 {
     private readonly JobRadarDbContext _dbContext;
     private readonly ContactNormalizationService _normalizer;
+    private readonly LocalJobAnalysisService _jobAnalysisService;
 
     public JobPostsController(
         JobRadarDbContext dbContext,
-        ContactNormalizationService normalizer)
+        ContactNormalizationService normalizer,
+        LocalJobAnalysisService jobAnalysisService)
     {
         _dbContext = dbContext;
         _normalizer = normalizer;
+        _jobAnalysisService = jobAnalysisService;
     }
 
     [HttpGet]
@@ -228,39 +233,30 @@ public sealed class JobPostsController : ControllerBase
     {
         var userId = User.GetUserId();
 
-        var jobPost = await _dbContext.JobPosts
-            .FirstOrDefaultAsync(item => item.Id == id && item.UserId == userId, cancellationToken);
+        var result = await _jobAnalysisService.AnalyzeAsync(userId, id, cancellationToken);
 
-        if (jobPost is null)
+        if (!result.Found)
         {
             return NotFound();
         }
 
-        if (jobPost.AnalysisStatus is JobPostAnalysisStatus.Pending or JobPostAnalysisStatus.InProgress)
+        if (result.IsFailed)
         {
-            return Conflict(new
+            return Ok(new
             {
-                message = "Job post analysis is already pending or in progress."
+                message = "Job post analysis failed, but the error was saved.",
+                analysisStatus = JobPostAnalysisStatus.Failed,
+                analysisId = result.AnalysisId,
+                error = result.ErrorMessage
             });
         }
-
-        if (string.IsNullOrWhiteSpace(jobPost.OriginalText))
-        {
-            return BadRequest(new
-            {
-                message = "Job post original text is required before requesting analysis."
-            });
-        }
-
-        jobPost.RequestAnalysis();
-
-        await _dbContext.SaveChangesAsync(cancellationToken);
 
         return Ok(new
         {
-            message = "Job post analysis requested successfully.",
-            analysisStatus = jobPost.AnalysisStatus,
-            jobPost.AnalysisRequestedAt
+            message = "Job post analysis completed successfully.",
+            analysisStatus = JobPostAnalysisStatus.Completed,
+            analysisId = result.AnalysisId,
+            hybridScore = result.HybridScore
         });
     }
 
@@ -409,6 +405,69 @@ public sealed class JobPostsController : ControllerBase
             jobPost.CreatedAt,
             jobPost.UpdatedAt);
     }
+
+    [HttpGet("{id:guid}/analysis")]
+    public async Task<IActionResult> GetAnalysis(Guid id, CancellationToken cancellationToken)
+    {
+        var userId = User.GetUserId();
+
+        var analysis = await _dbContext.JobAnalyses
+            .FirstOrDefaultAsync(
+                item => item.JobPostId == id && item.UserId == userId,
+                cancellationToken);
+
+        if (analysis is null)
+        {
+            return NotFound(new
+            {
+                message = "Job analysis not found."
+            });
+        }
+
+        return Ok(ToAnalysisResponse(analysis));
+    }
+
+    private static JobAnalysisResponse ToAnalysisResponse(JobAnalysis analysis)
+    {
+        return new JobAnalysisResponse(
+            analysis.Id,
+            analysis.JobPostId,
+            analysis.PromptVersion,
+            analysis.Model,
+            analysis.IsJobPost,
+            analysis.DetectedTitle,
+            analysis.DetectedCompany,
+            analysis.Seniority,
+            analysis.WorkModel,
+            analysis.ContractType,
+            analysis.Location,
+            DeserializeList(analysis.RequiredTechnologiesJson),
+            DeserializeList(analysis.NiceToHaveTechnologiesJson),
+            DeserializeList(analysis.ResponsibilitiesJson),
+            DeserializeList(analysis.RequirementsJson),
+            DeserializeList(analysis.BenefitsJson),
+            DeserializeList(analysis.RedFlagsJson),
+            DeserializeList(analysis.FitReasonsJson),
+            DeserializeList(analysis.ConcernsJson),
+            analysis.Summary,
+            analysis.AiFitScore,
+            analysis.HybridScore,
+            analysis.ConfidenceScore,
+            analysis.Recommendation,
+            analysis.ErrorMessage,
+            analysis.CompletedAt,
+            analysis.CreatedAt);
+    }
+
+    private static IReadOnlyCollection<string> DeserializeList(string json)
+    {
+        if (string.IsNullOrWhiteSpace(json))
+        {
+            return [];
+        }
+
+        return JsonSerializer.Deserialize<IReadOnlyCollection<string>>(json) ?? [];
+    }
 }
 
 public sealed record CreateJobPostRequest(
@@ -464,3 +523,32 @@ public sealed record JobPostDuplicateResponse(
     string Company,
     string? SourceUrl,
     string MatchReason);
+
+public sealed record JobAnalysisResponse(
+    Guid Id,
+    Guid JobPostId,
+    string PromptVersion,
+    string Model,
+    bool IsJobPost,
+    string DetectedTitle,
+    string DetectedCompany,
+    string Seniority,
+    string WorkModel,
+    string ContractType,
+    string Location,
+    IReadOnlyCollection<string> RequiredTechnologies,
+    IReadOnlyCollection<string> NiceToHaveTechnologies,
+    IReadOnlyCollection<string> Responsibilities,
+    IReadOnlyCollection<string> Requirements,
+    IReadOnlyCollection<string> Benefits,
+    IReadOnlyCollection<string> RedFlags,
+    IReadOnlyCollection<string> FitReasons,
+    IReadOnlyCollection<string> Concerns,
+    string Summary,
+    int AiFitScore,
+    int HybridScore,
+    decimal ConfidenceScore,
+    string Recommendation,
+    string? ErrorMessage,
+    DateTimeOffset CompletedAt,
+    DateTimeOffset CreatedAt);

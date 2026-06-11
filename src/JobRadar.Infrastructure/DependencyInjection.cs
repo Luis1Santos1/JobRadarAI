@@ -1,9 +1,11 @@
-﻿using JobRadar.Infrastructure.Auth;
+﻿using JobRadar.Infrastructure.AI;
+using JobRadar.Infrastructure.Auth;
 using JobRadar.Infrastructure.Normalization;
 using JobRadar.Infrastructure.Persistence;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.Options;
 
 namespace JobRadar.Infrastructure;
 
@@ -21,7 +23,20 @@ public static class DependencyInjection
         }
 
         services.Configure<JwtSettings>(configuration.GetSection("Jwt"));
+        services.Configure<LocalAiSettings>(configuration.GetSection("LocalAi"));
 
+        services.AddScoped<HybridJobScoreCalculator>();
+        services.AddScoped<LocalJobAnalysisService>();
+
+        services.AddHttpClient<LocalAiClient>((serviceProvider, httpClient) =>
+        {
+            var settings = serviceProvider
+                .GetRequiredService<IOptions<LocalAiSettings>>()
+                .Value;
+
+            httpClient.BaseAddress = new Uri(settings.BaseUrl);
+            httpClient.Timeout = TimeSpan.FromSeconds(settings.TimeoutSeconds <= 0 ? 180 : settings.TimeoutSeconds);
+        });
         services.AddScoped<PasswordHasher>();
         services.AddScoped<JwtTokenService>();
         services.AddScoped<ContactNormalizationService>();

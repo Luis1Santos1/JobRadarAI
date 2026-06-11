@@ -36,6 +36,8 @@ public sealed class JobRadarDbContext : DbContext
 
     public DbSet<JobPost> JobPosts => Set<JobPost>();
 
+    public DbSet<JobAnalysis> JobAnalyses => Set<JobAnalysis>();
+
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
         modelBuilder.ApplyConfigurationsFromAssembly(typeof(JobRadarDbContext).Assembly);
