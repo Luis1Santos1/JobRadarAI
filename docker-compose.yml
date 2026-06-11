@@ -1,0 +1,50 @@
+services:
+  sqlserver:
+    image: mcr.microsoft.com/mssql/server:2022-latest
+    container_name: jobradar-sqlserver
+    environment:
+      ACCEPT_EULA: "Y"
+      MSSQL_SA_PASSWORD: "JobRadar_AI@2026"
+      MSSQL_PID: "Developer"
+    ports:
+      - "1433:1433"
+    volumes:
+      - jobradar_sqlserver_data:/var/opt/mssql
+    networks:
+      - jobradar-network
+
+  api:
+    build:
+      context: .
+      dockerfile: src/JobRadar.Api/Dockerfile
+    container_name: jobradar-api
+    environment:
+      ASPNETCORE_ENVIRONMENT: "Development"
+      ASPNETCORE_URLS: "http://+:8080"
+      ConnectionStrings__DefaultConnection: "Server=sqlserver,1433;Database=JobRadarAiDb;User Id=sa;Password=JobRadar_AI@2026;TrustServerCertificate=True;Encrypt=False"
+      Database__ApplyMigrations: "true"
+    ports:
+      - "8080:8080"
+    depends_on:
+      - sqlserver
+    networks:
+      - jobradar-network
+
+  web:
+    build:
+      context: ./frontend/jobradar-web
+      dockerfile: Dockerfile
+    container_name: jobradar-web
+    ports:
+      - "4200:80"
+    depends_on:
+      - api
+    networks:
+      - jobradar-network
+
+volumes:
+  jobradar_sqlserver_data:
+
+networks:
+  jobradar-network:
+    driver: bridge
